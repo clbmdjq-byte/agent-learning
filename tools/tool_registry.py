@@ -18,7 +18,7 @@ class ToolRegistry:
         if name in self.tools:
             del self.tools[name]
 
-    def get_tool(self, name: str):
+    def get_tool(self, name: str) -> BaseTool:
         if name in self.tools:
             return self.tools[name]
         else:

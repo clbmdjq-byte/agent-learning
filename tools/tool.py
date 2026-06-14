@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from tools.tool_utils import to_schema
+
 
 class BaseTool(ABC):
     def __init__(self,
@@ -11,15 +13,9 @@ class BaseTool(ABC):
         self.parameters = parameters
 
     @abstractmethod
-    def execute(self, **kwargs) -> dict:
+    def execute(self, params: dict) -> dict:
         pass
 
+    # 先固定openai协议后续再分适配器
     def to_schema(self):
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": self.parameters
-            }
-        }
+        to_schema(self.name, self.description, self.parameters)

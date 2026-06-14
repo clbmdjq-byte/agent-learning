@@ -20,9 +20,11 @@ from tools.tool_registry import ToolRegistry
 class BaseAgent(ABC):
     def __init__(self,
                  name: str,
+                 max_loop: int,
                  client: LlmClient,
                  registry: ToolRegistry):
         self.agent_name = name
+        self.max_loop = max_loop
         self.client = client
         self.tool_registry = registry
 
