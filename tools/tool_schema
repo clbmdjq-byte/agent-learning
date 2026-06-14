@@ -1,0 +1,32 @@
+{
+        "type": "function",
+        "function": {
+            "name": "query_metric_data",
+            "description": "查询指定日期、指定商品的业务指标数据，例如订单量、销量、总销量、销售额、支付成功率等。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "metric": {
+                        "type": "object",
+                        "description": "指标查询对象",
+                        "properties": {
+                            "metric_name": {
+                                "type": "string",
+                                "description":"系统间交互的指标唯一标识，可通过查询指标列表获取"
+                            },
+                            "date": {
+                                "type": "string",
+                                "description": "查询日期，例如 today、yesterday 或 2026-06-06",
+                            },
+                            "product_name": {
+                                "type": "string",
+                                "description": "商品名称，例如 茅台、五粮液。如果用户没有指定商品，则为空字符串。",
+                            },
+                        },
+                        "required": ["metric_name", "date"],
+                    }
+                },
+                "required": ["metric"],
+            },
+        },
+    }
