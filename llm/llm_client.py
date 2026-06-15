@@ -1,5 +1,5 @@
 from openai import OpenAI
-from openai.types.responses import Response
+from openai.types.chat import ChatCompletion
 
 from config.config import LlmClientConfig
 
@@ -10,10 +10,9 @@ class LlmClient:
         self.client = OpenAI(api_key=config.api_key,
                              base_url=config.base_url)
 
-    def chat(self, prompts: list, tools: list, previous_response_id: str | None) -> Response:
-        return self.client.responses.create(input=prompts,
-                                            tools=tools,
-                                            model=self.config.model,
-                                            max_output_tokens=self.config.max_tokens,
-                                            previous_response_id=previous_response_id
-                                            )
+    def chat(self, prompts: list, tools: list) -> ChatCompletion:
+        return self.client.chat.completions.create(messages=prompts,
+                                                   tools=tools,
+                                                   model=self.config.model,
+                                                   max_tokens=self.config.max_tokens
+                                                   )

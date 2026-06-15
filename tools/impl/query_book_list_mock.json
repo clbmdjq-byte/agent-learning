@@ -1,0 +1,152 @@
+[
+  {
+    "book_code": "B-1001",
+    "book_name": "深入理解计算机系统",
+    "author": "Randal E. Bryant, David R. O'Hallaron",
+    "publish_year": 2016,
+    "category": "计算机科学",
+    "publisher": "机械工业出版社",
+    "stock": 3,
+    "description": "介绍计算机系统底层原理、程序表示、存储层次和链接加载等内容。"
+  },
+  {
+    "book_code": "B-1002",
+    "book_name": "代码整洁之道",
+    "author": "Robert C. Martin",
+    "publish_year": 2008,
+    "category": "软件工程",
+    "publisher": "人民邮电出版社",
+    "stock": 5,
+    "description": "讲解如何编写可读、可维护、可演进的代码。"
+  },
+  {
+    "book_code": "B-1003",
+    "book_name": "三体",
+    "author": "刘慈欣",
+    "publish_year": 2008,
+    "category": "科幻",
+    "publisher": "重庆出版社",
+    "stock": 8,
+    "description": "以人类文明和外星文明接触为背景的长篇科幻小说。"
+  },
+  {
+    "book_code": "B-1004",
+    "book_name": "算法导论",
+    "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein",
+    "publish_year": 2009,
+    "category": "算法",
+    "publisher": "机械工业出版社",
+    "stock": 4,
+    "description": "系统介绍算法设计、分析和常见数据结构。"
+  },
+  {
+    "book_code": "B-1005",
+    "book_name": "设计模式",
+    "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+    "publish_year": 1994,
+    "category": "软件设计",
+    "publisher": "机械工业出版社",
+    "stock": 2,
+    "description": "总结面向对象软件设计中的常见模式和适用场景。"
+  },
+  {
+    "book_code": "B-1006",
+    "book_name": "重构：改善既有代码的设计",
+    "author": "Martin Fowler",
+    "publish_year": 2018,
+    "category": "软件工程",
+    "publisher": "人民邮电出版社",
+    "stock": 6,
+    "description": "讲解识别代码坏味道和逐步重构的实践方法。"
+  },
+  {
+    "book_code": "B-1007",
+    "book_name": "人月神话",
+    "author": "Frederick P. Brooks Jr.",
+    "publish_year": 1975,
+    "category": "项目管理",
+    "publisher": "清华大学出版社",
+    "stock": 7,
+    "description": "讨论大型软件项目管理中的复杂性、沟通和进度问题。"
+  },
+  {
+    "book_code": "B-1008",
+    "book_name": "黑客与画家",
+    "author": "Paul Graham",
+    "publish_year": 2004,
+    "category": "技术随笔",
+    "publisher": "人民邮电出版社",
+    "stock": 10,
+    "description": "关于编程、创业、设计和创造力的技术随笔合集。"
+  },
+  {
+    "book_code": "B-1009",
+    "book_name": "数据库系统概念",
+    "author": "Abraham Silberschatz, Henry F. Korth, S. Sudarshan",
+    "publish_year": 2019,
+    "category": "数据库",
+    "publisher": "机械工业出版社",
+    "stock": 4,
+    "description": "覆盖关系模型、SQL、事务、并发控制和数据库设计。"
+  },
+  {
+    "book_code": "B-1010",
+    "book_name": "人工智能：一种现代的方法",
+    "author": "Stuart Russell, Peter Norvig",
+    "publish_year": 2020,
+    "category": "人工智能",
+    "publisher": "清华大学出版社",
+    "stock": 3,
+    "description": "系统介绍搜索、推理、学习、规划和智能体等 AI 基础。"
+  },
+  {
+    "book_code": "B-1011",
+    "book_name": "Python 编程：从入门到实践",
+    "author": "Eric Matthes",
+    "publish_year": 2019,
+    "category": "Python",
+    "publisher": "人民邮电出版社",
+    "stock": 9,
+    "description": "面向初学者的 Python 语法、项目实践和应用开发教程。"
+  },
+  {
+    "book_code": "B-1012",
+    "book_name": "Effective Java",
+    "author": "Joshua Bloch",
+    "publish_year": 2018,
+    "category": "Java",
+    "publisher": "机械工业出版社",
+    "stock": 5,
+    "description": "总结 Java 语言使用中的最佳实践和 API 设计经验。"
+  },
+  {
+    "book_code": "B-1013",
+    "book_name": "领域驱动设计",
+    "author": "Eric Evans",
+    "publish_year": 2003,
+    "category": "架构设计",
+    "publisher": "人民邮电出版社",
+    "stock": 2,
+    "description": "介绍以领域模型为核心的软件设计思想和战术模式。"
+  },
+  {
+    "book_code": "B-1014",
+    "book_name": "凤凰项目",
+    "author": "Gene Kim, Kevin Behr, George Spafford",
+    "publish_year": 2013,
+    "category": "DevOps",
+    "publisher": "人民邮电出版社",
+    "stock": 6,
+    "description": "用小说形式讲述 DevOps、交付流程和组织协作改进。"
+  },
+  {
+    "book_code": "B-1015",
+    "book_name": "流畅的 Python",
+    "author": "Luciano Ramalho",
+    "publish_year": 2022,
+    "category": "Python",
+    "publisher": "人民邮电出版社",
+    "stock": 4,
+    "description": "深入讲解 Python 数据模型、函数、对象、并发和元编程。"
+  }
+]

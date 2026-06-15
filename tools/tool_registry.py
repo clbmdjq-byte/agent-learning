@@ -1,12 +1,10 @@
 from tools.tool import BaseTool
-from tools.impl.query_metric_list import QueryMetricList
 
 
 class ToolRegistry:
 
     def __init__(self):
         self.tools = {}
-        self.add_tool(QueryMetricList())
 
     def add_tool(self, tool: BaseTool):
         if tool.name in self.tools:
@@ -24,5 +22,9 @@ class ToolRegistry:
         else:
             return None
 
-    def tool_list(self):
-        return list(self.tools.values())
+    def tool_schemas(self):
+        tool_schemas = []
+        for value in self.tools.values():
+            if isinstance(value, BaseTool):
+                tool_schemas.append(value.to_schema())
+        return tool_schemas

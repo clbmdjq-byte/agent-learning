@@ -1,6 +1,6 @@
 import json
 
-from openai.types.responses import ResponseFunctionToolCall
+from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from agent.agent import BaseAgent
 from llm.llm_client import LlmClient
@@ -21,34 +21,34 @@ class DemoAgent(BaseAgent):
             raise Exception('No user input')
 
         ## todo 召回知识库、记忆等相关信息组成最终prompts,也可以作为tool由agent负责调用先简单实现chain模式
-        prompts = [{"role": "system", "context": "系统提示词"}
-            , {"role": "user", "content":"参考资料:XXX;问题:"+user_input }]
-        ans = ''
-        previous_response_id = None
+        prompts = [{"role": "system", "content": "你是一名问数助手"}
+            , {"role": "user", "content":"参考资料:X;问题:"+user_input }]
+        ans = ""
         for i in range(self.max_loop):
             res = self.client.chat(prompts,
-                                   self.tool_registry.tool_list(),
-                                   previous_response_id)
-            if res is None or res.output is None:
+                                   self.tool_registry.tool_schemas())
+            if res is None or not res.choices:
                 raise Exception('llm not responding')
 
-            tool_outputs = []
-            for o in res.output:
-                if o is None or not isinstance(o, ResponseFunctionToolCall):
+            message = res.choices[0].message
+            tool_calls = message.tool_calls or []
+            if not tool_calls:
+                ans = message.content
+                break
+            prompts.append(message.model_dump(exclude_none=True))
+
+            for o in tool_calls:
+                if not isinstance(o, ChatCompletionMessageFunctionToolCall):
                     continue
-                tool = self.tool_registry.get_tool(o.name)
+                tool = self.tool_registry.get_tool(o.function.name)
                 if tool is None:
-                    print("tool not found:" + o.name)
+                    print("tool not found:" + o.function.name)
                     continue
-                args = parse_arguments(o.arguments)
+                args = parse_arguments(o.function.arguments)
                 tool_result = tool.execute(args)
-                tool_outputs.append(build_tool_output(o.call_id, tool_result))
-            if not tool_outputs:
-                return res.output_text or ""
-            else:
-                # todo 组装tool result
-                prompts = tool_outputs
-        return ans
+                prompts.append(build_tool_output(o.id, tool_result))
+
+        return ans or ""
 
 
 def parse_arguments(arguments) -> dict:

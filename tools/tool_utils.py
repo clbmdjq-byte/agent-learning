@@ -1,9 +1,13 @@
 # 先固定openai协议后续再分适配器工具
+import json
+
+
 def build_tool_output(call_id: str, data: dict) -> dict:
     return {
-        "call_id": call_id,
-        "output": data,
-        "type": "function_call_output"
+        "role":"tool",
+        "tool_call_id": call_id,
+        "content": json.dumps(data, ensure_ascii=False)
+
     }
 
 
