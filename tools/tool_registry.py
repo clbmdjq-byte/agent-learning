@@ -8,8 +8,7 @@ class ToolRegistry:
 
     def add_tool(self, tool: BaseTool):
         if tool.name in self.tools:
-            print("tool already registered")
-            return
+            raise ValueError(f"tool already registered: {tool.name}")
         self.tools[tool.name] = tool
 
     def remove_tool(self, name: str):

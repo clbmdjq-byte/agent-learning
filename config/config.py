@@ -1,8 +1,4 @@
-import os
-
 from dotenv import load_dotenv
-
-from tools.tool_registry import ToolRegistry
 
 
 class LlmClientConfig:

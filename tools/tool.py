@@ -7,7 +7,7 @@ class BaseTool(ABC):
     def __init__(self,
                  name: str,
                  description: str,
-                 parameters: dict |None = None):
+                 parameters: dict | None = None):
         self.name = name
         self.description = description
         self.parameters = parameters or empty_parameters()

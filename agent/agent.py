@@ -27,6 +27,7 @@ class BaseAgent(ABC):
         self.max_loop = max_loop
         self.client = client
         self.tool_registry = registry
+        self.last_trace = None
 
     @abstractmethod
     def run(self, user_input: str) -> str:
