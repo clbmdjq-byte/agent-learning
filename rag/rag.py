@@ -1,15 +1,18 @@
-import os
 import sys
 from pathlib import Path
 
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from config.config import get_rag_paths
 from rag.context_builder import ContextBuilder
 from rag.loader import DocumentLoader
 from rag.reranker import Reranker
 from rag.retriever import Retriever, merge
 from rag.spliter import DocumentSpliter
+
+
+DEFAULT_RAG_PATH = Path(__file__).resolve().parent.parent.parent / "agent-learning-knowledge"
 
 
 class LocalRag:
@@ -38,12 +41,8 @@ class LocalRag:
 
 
 def build_rag() -> LocalRag:
-    default_rag_path = Path(__file__).resolve().parent.parent.parent / "agent-learning-knowledge"
-    rag_paths = os.getenv("RAG_PATHS", str(default_rag_path)).strip()
-    paths = [path.strip() for path in rag_paths.split(os.pathsep) if path.strip()]
-    return LocalRag(paths)
+    return LocalRag(get_rag_paths(DEFAULT_RAG_PATH))
 
 if __name__ == "__main__":
-    mock_path = Path(__file__).resolve().parent.parent.parent / "agent-learning-knowledge"
-    rag = LocalRag([str(mock_path)])
+    rag = build_rag()
     print(rag.build_context("LocalRag 如何组合 RAG 流程"))

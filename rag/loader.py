@@ -11,11 +11,12 @@ class DocumentLoader:
     def load(self) -> list[Document]:
         documents = []
         for scan_path in self.scan_paths:
-            path = Path(scan_path)
-            if not path.exists():
+            root = Path(scan_path).expanduser()
+            if not root.exists():
                 continue
-            for file in path.rglob("*"):
-                if file.suffix in self.suffixes:
+            for file in root.rglob("*"):
+                if file.suffix.lower() in self.suffixes:
                     content = file.read_text(encoding="utf-8")
-                    documents.append(Document(Metadata(file.name), content))
+                    source = str(file.relative_to(root))
+                    documents.append(Document(Metadata(source), content))
         return documents
