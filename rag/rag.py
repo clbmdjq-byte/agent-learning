@@ -5,9 +5,9 @@ if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config.config import get_rag_paths
-from rag.context_builder import ContextBuilder
 from rag.loader import DocumentLoader
 from rag.reranker import Reranker
+from rag.result_formatter import RagResultFormatter
 from rag.retriever import Retriever, merge
 from rag.spliter import DocumentSpliter
 
@@ -26,7 +26,7 @@ class LocalRag:
         chunks = DocumentSpliter(chunk_size, overlap).split_documents(docs)
         self.retriever = Retriever(chunks, retrieve_top_k)
         self.reranker = Reranker(rerank_top_k, {"common": 1.0})
-        self.context_builder = ContextBuilder()
+        self.result_formatter = RagResultFormatter()
 
     def search(self, query: str):
         retrieved = self.retriever.retrieve(query)
@@ -34,7 +34,7 @@ class LocalRag:
 
     def build_context(self, query: str) -> str:
         results = self.search(query)
-        return self.context_builder.build_context(results)
+        return self.result_formatter.build_context(results)
 
     def find(self, query: str) -> str:
         return self.build_context(query)

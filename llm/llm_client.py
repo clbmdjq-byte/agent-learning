@@ -2,6 +2,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
 from config.config import LlmClientConfig
+from context.models import PromptMessage
 
 
 class LlmClient:
@@ -10,8 +11,12 @@ class LlmClient:
         self.client = OpenAI(api_key=config.api_key,
                              base_url=config.base_url)
 
-    def chat(self, prompts: list, tools: list) -> ChatCompletion:
-        return self.client.chat.completions.create(messages=prompts,
+    def chat(self, prompts: list[PromptMessage], tools: list) -> ChatCompletion:
+        messages = [
+            prompt.model_dump(exclude_none=True)
+            for prompt in prompts
+        ]
+        return self.client.chat.completions.create(messages=messages,
                                                    tools=tools,
                                                    model=self.config.model,
                                                    max_tokens=self.config.max_tokens

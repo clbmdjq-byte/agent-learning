@@ -22,8 +22,39 @@
 * Tool Registry
 * Tool Calling
 * Agent Loop（Demo）
-* Memory（进行中）
-* RAG（进行中）
+* Memory（短期记忆已接入 Demo）
+* RAG（本地检索 Demo 已接入）
+
+## 当前进度
+
+### Memory
+
+当前已接入短期记忆和历史消息持久化。历史消息用于记录真实 user/assistant 输入输出，短期记忆用于在当前 session 中保留摘要和近 N 条对话，并支持服务重启后的基础恢复。
+
+### Context
+
+当前已将 LLM 交互消息统一为 `PromptMessage`，由 `context` 负责组织运行时上下文，在 `LlmClient` 边界转换为模型接口需要的消息格式。
+
+### RAG
+
+当前已实现本地 RAG Demo，包括文档加载、切分、检索、重排序和结果格式化，并通过 `SearchTool` 接入 Tool Calling。
+
+## DemoAgent 主流程
+
+```mermaid
+flowchart TD
+    A[用户输入 + session_id] --> B[获取或恢复 Session]
+    B --> C[构造 PromptMessage 上下文]
+    C --> D[LLM 调用]
+    D --> E{是否需要工具}
+    E -- 是 --> F[执行工具并回填结果]
+    F --> D
+    E -- 否 --> G[得到最终答案]
+    G --> H[追加历史消息]
+    H --> I[更新短期记忆]
+    I --> J[持久化短期记忆]
+    J --> K[返回答案]
+```
 
 ## 设计原则
 
@@ -66,6 +97,13 @@ Plan & Execute
  ↓
 Multi-Agent
 ```
+
+## 下一步计划
+
+* 接入 Session 持久化与会话列表。
+* 完善短期记忆恢复策略，区分 Session 主体恢复和 Memory 恢复。
+* 为 CLI 输出增加更明确的纯文本格式约束。
+* 评估长期记忆提取与存储结构。
 
 ## 说明
 

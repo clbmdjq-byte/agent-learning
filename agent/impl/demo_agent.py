@@ -3,9 +3,11 @@ import json
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from agent.agent import BaseAgent
+from context.builders import agent_run_context
+from context.builders.tool_result import build_tool_result_message
+from context.models import PromptMessage
 from llm.llm_client import LlmClient
 from tools.tool_registry import ToolRegistry
-from tools.tool_utils import build_tool_output
 from trace.trace import AgentTrace
 
 
@@ -15,21 +17,22 @@ class DemoAgent(BaseAgent):
                  name: str,
                  client: LlmClient,
                  registry: ToolRegistry):
-        super().__init__(name, 10, client, registry)
+        super().__init__(name, 10, client, registry, 5)
 
-    def run(self, user_input: str) -> str:
+    def run(self, user_input: str, session_id: str) -> str:
         if not user_input or not user_input.strip():
             raise Exception("No user input")
 
         trace = AgentTrace(user_input)
         self.last_trace = trace
+        session = self.get_session(session_id)
+        prompts = agent_run_context.build_agent_run_messages(user_input, session.short_memory)
+        ans = self.loop(prompts, trace)
+        # 构造历史消息，当前先不加入tool_call
+        self.after_success(user_input, ans, session_id)
+        return ans or ""
 
-        user_content = f"问题:{user_input}"
-        prompts = [
-            {"role": "system", "content": "你是一名问答助手，请使用中文输出并且只输出最终答案不要输出思考、分析、检索、推理过程。"},
-            {"role": "user", "content": user_content},
-        ]
-
+    def loop(self, prompts: list[PromptMessage], trace: AgentTrace) -> str:
         ans = ""
         for _ in range(self.max_loop):
             res = self.client.chat(prompts,
@@ -42,7 +45,7 @@ class DemoAgent(BaseAgent):
             if not tool_calls:
                 ans = message.content
                 break
-            prompts.append(message.model_dump(exclude_none=True))
+            prompts.append(PromptMessage.model_validate(message.model_dump(exclude_none=True)))
 
             for tool_call in tool_calls:
                 if not isinstance(tool_call, ChatCompletionMessageFunctionToolCall):
@@ -62,7 +65,7 @@ class DemoAgent(BaseAgent):
                     "arguments": args,
                     "result": tool_result,
                 })
-                prompts.append(build_tool_output(tool_call.id, tool_result))
+                prompts.append(build_tool_result_message(tool_call.id, tool_result))
 
         trace.add_final_ans(ans or "")
         return ans or ""

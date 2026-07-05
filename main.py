@@ -1,8 +1,11 @@
+import uuid
+
 from agent.factory import build_agent
 
 
 def main():
     agent = build_agent()
+    session_id = str(uuid.uuid4())
     print("输入 exit、quit、q 或 退出 结束对话")
 
     while True:
@@ -13,7 +16,7 @@ def main():
             continue
 
         try:
-            answer = agent.run(user_input)
+            answer = agent.run(user_input, session_id)
             print("助手：" + answer)
             if agent.last_trace:
                 agent.last_trace.print_trace()
