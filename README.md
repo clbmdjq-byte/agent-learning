@@ -23,6 +23,7 @@
 * Tool Calling
 * Agent Loop（Demo）
 * Memory（短期记忆已接入 Demo）
+* Session（会话元信息持久化与会话 ID 列表）
 * RAG（本地检索 Demo 已接入）
 
 ## 当前进度
@@ -30,6 +31,21 @@
 ### Memory
 
 当前已接入短期记忆和历史消息持久化。历史消息用于记录真实 user/assistant 输入输出，短期记忆用于在当前 session 中保留摘要和近 N 条对话，并支持服务重启后的基础恢复。
+
+### Session
+
+当前已接入 Session 元信息持久化。`SessionInfo` 记录 session id、标题、创建时间、更新时间和最后一条消息 id；`SessionRepository` 支持按 session id 读写元信息，并通过扫描 `session/*.json` 文件名获取可恢复的会话 ID 列表。
+
+Session 采用懒加载策略：Agent 启动时不加载所有会话内容，只在用户选择或运行指定 session 时恢复对应的 SessionInfo 和短期记忆。新的 session 只有在完成一轮成功对话后才会持久化，避免空会话污染 resume 列表。
+
+本地存储根目录已从 memory 专用目录调整为通用 `STORE_DIR`，当前模块通过各自的 base dir 区分数据：
+
+```text
+data/store/
+  history/
+  short_term_memory/
+  session/
+```
 
 ### Context
 
@@ -100,10 +116,10 @@ Multi-Agent
 
 ## 下一步计划
 
-* 接入 Session 持久化与会话列表。
-* 完善短期记忆恢复策略，区分 Session 主体恢复和 Memory 恢复。
-* 为 CLI 输出增加更明确的纯文本格式约束。
-* 评估长期记忆提取与存储结构。
+* 在 `main.py` 中增加简单的 session 选择入口，用于验证已有会话恢复流程。
+* 继续深入 Agent 运行模式，优先验证 Context Engineering、Plan & Execute 等模式。
+* 为 CLI 输出增加更明确的纯文本格式约束，便于观察 Agent 执行过程。
+* 后续再评估长期记忆提取与存储结构；当前 Memory Demo 先以短期记忆和历史消息持久化为主。
 
 ## 说明
 

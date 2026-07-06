@@ -25,9 +25,9 @@ class LlmClientConfig:
         )
 
 
-def get_memory_store_dir() -> Path:
-    memory_store_dir = os.getenv("MEMORY_STORE_DIR", str(PROJECT_ROOT / "data" / "memory")).strip()
-    return Path(memory_store_dir).expanduser()
+def get_store_dir() -> Path:
+    store_dir = os.getenv("STORE_DIR", str(PROJECT_ROOT / "data" / "store")).strip()
+    return Path(store_dir).expanduser()
 
 
 def get_rag_paths(default_path: Path) -> list[str]:

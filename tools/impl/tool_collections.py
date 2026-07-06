@@ -9,7 +9,7 @@ class QueryBookList(BaseTool):
     def __init__(self):
         super().__init__(
             name="query_book_list",
-            description="查询当前 mock 知识库中可查阅的资料目录，包括 Agent 学习资料、产品手册、制度文档、旅行攻略、烹饪笔记和运动规则。",
+            description="查询当前个人笔记中记录的可查阅的目录，包括 Agent 学习资料、产品手册、制度文档、旅行攻略、烹饪笔记和运动规则。",
         )
 
     def execute(self, params: dict) -> dict:
@@ -19,7 +19,7 @@ class QueryBookList(BaseTool):
 
         return {
             "data": books,
-            "description": "当前 mock 知识库可查阅资料目录，可用于配合 RAG 检索测试。",
+            "description": "当前个人笔记中记录的可查阅的目录。",
         }
 
 

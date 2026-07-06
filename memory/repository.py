@@ -1,5 +1,5 @@
 from memory.models import Message, ShortTermMemory
-from memory.store import LocalFileStore
+from common.store import LocalFileStore
 
 
 class MessageRepository:

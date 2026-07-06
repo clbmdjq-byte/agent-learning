@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from config.config import get_memory_store_dir
+from config.config import get_store_dir
 
 
 PathLike = str | Path
@@ -9,7 +9,7 @@ PathLike = str | Path
 class LocalFileStore:
     def __init__(self):
         """创建以指定目录为根目录的本地文件存储。"""
-        self.root_dir = Path(get_memory_store_dir()).expanduser().resolve()
+        self.root_dir = Path(get_store_dir()).expanduser().resolve()
         if not self.root_dir.exists():
             self.root_dir.mkdir(parents=True)
 
@@ -52,6 +52,15 @@ class LocalFileStore:
     def exists(self, path: PathLike) -> bool:
         """判断目标路径是否存在。"""
         return self._resolve(path).exists()
+
+    def list_files(self, path: PathLike, pattern: str = "*") -> list[Path]:
+        """列出目录下匹配指定模式的文件，目录不存在时返回空列表。"""
+        target = self._resolve(path)
+        if not target.exists():
+            return []
+        if not target.is_dir():
+            raise ValueError(f"Path is not a directory: {path}")
+        return sorted(file for file in target.glob(pattern) if file.is_file())
 
     def _resolve(self, path: PathLike) -> Path:
         """解析本地路径，并拒绝访问存储根目录之外的路径。"""
