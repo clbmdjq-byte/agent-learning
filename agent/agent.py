@@ -56,6 +56,14 @@ class BaseAgent(ABC):
         self.session_map[session_id] = session
         return session
 
+    def resume_session(self, session_id: str) -> Session | None:
+        if self.session_repository.read(session_id) is None:
+            return None
+        return self.get_session(session_id)
+
+    def find_all_session_ids(self) -> list[str]:
+        return self.session_repository.find_all_session_ids()
+
     def after_success(self,
                       user_input: str,
                       llm_ans: str,

@@ -43,6 +43,7 @@ class DemoAgent(BaseAgent):
             message = res.choices[0].message
             tool_calls = message.tool_calls or []
             if not tool_calls:
+
                 ans = message.content
                 break
             prompts.append(PromptMessage.model_validate(message.model_dump(exclude_none=True)))
