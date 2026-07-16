@@ -6,8 +6,8 @@ if __name__ == "__main__" and __package__ is None:
 
 from config.config import get_rag_paths
 from rag.loader import DocumentLoader
+from rag.models import SearchResult
 from rag.reranker import Reranker
-from rag.result_formatter import RagResultFormatter
 from rag.retriever import Retriever, merge
 from rag.spliter import DocumentSpliter
 
@@ -26,18 +26,10 @@ class LocalRag:
         chunks = DocumentSpliter(chunk_size, overlap).split_documents(docs)
         self.retriever = Retriever(chunks, retrieve_top_k)
         self.reranker = Reranker(rerank_top_k, {"common": 1.0})
-        self.result_formatter = RagResultFormatter()
 
-    def search(self, query: str):
+    def search(self, query: str) -> list[SearchResult]:
         retrieved = self.retriever.retrieve(query)
         return self.reranker.rerank(query, merge(retrieved))
-
-    def build_context(self, query: str) -> str:
-        results = self.search(query)
-        return self.result_formatter.build_context(results)
-
-    def find(self, query: str) -> str:
-        return self.build_context(query)
 
 
 def build_rag() -> LocalRag:
@@ -45,4 +37,6 @@ def build_rag() -> LocalRag:
 
 if __name__ == "__main__":
     rag = build_rag()
-    print(rag.build_context("LocalRag 如何组合 RAG 流程"))
+    search_results = rag.search("LocalRag 如何组合 RAG 流程")
+    for search_result in search_results:
+        print(search_result.chunk.content)

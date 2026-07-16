@@ -1,6 +1,6 @@
 from common.time_utils import now_ms
-from context.builders.memory_summary import build_memory_summary_prompt
 from llm.llm_client import LlmClient
+from memory.builders.summary_prompt import build_memory_summary_prompt
 from memory.models import Message, ShortTermMemory
 
 class ShortTermMemoryStrategy:

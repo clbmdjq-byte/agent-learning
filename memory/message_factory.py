@@ -1,7 +1,7 @@
 from uuid import uuid4
 
+from common.models import PromptMessage
 from common.time_utils import now_ms
-from context.models import PromptMessage
 from memory.models import Message
 
 HISTORY_MESSAGE_ROLES = {"user", "assistant"}

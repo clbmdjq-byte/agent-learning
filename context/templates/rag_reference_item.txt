@@ -1,0 +1,6 @@
+[Reference {index}]
+Source: {source}
+Score: {score}
+
+Content:
+{content}

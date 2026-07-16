@@ -1,11 +1,8 @@
-import json
-
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from agent.agent import BaseAgent
-from context.builders import agent_run_context
-from context.builders.tool_result import build_tool_result_message
-from context.models import PromptMessage
+from common.models import PromptMessage
+from context.builders.builder import ContextBuilder
 from llm.llm_client import LlmClient
 from tools.tool_registry import ToolRegistry
 from trace.trace import AgentTrace
@@ -16,8 +13,10 @@ class DemoAgent(BaseAgent):
     def __init__(self,
                  name: str,
                  client: LlmClient,
-                 registry: ToolRegistry):
+                 registry: ToolRegistry,
+                 context_builder: ContextBuilder):
         super().__init__(name, 10, client, registry, 5)
+        self.context_builder = context_builder
 
     def run(self, user_input: str, session_id: str) -> str:
         if not user_input or not user_input.strip():
@@ -26,7 +25,10 @@ class DemoAgent(BaseAgent):
         trace = AgentTrace(user_input)
         self.last_trace = trace
         session = self.get_session(session_id)
-        prompts = agent_run_context.build_agent_run_messages(user_input, session.short_memory)
+        prompts = self.context_builder.build_initial_context(
+            user_input,
+            session.short_memory,
+        )
         ans = self.loop(prompts, trace)
         # 构造历史消息，当前先不加入tool_call
         self.after_success(user_input, ans, session_id)
@@ -51,37 +53,24 @@ class DemoAgent(BaseAgent):
             for tool_call in tool_calls:
                 if not isinstance(tool_call, ChatCompletionMessageFunctionToolCall):
                     continue
-                tool = self.tool_registry.get_tool(tool_call.function.name)
-                if tool is None:
-                    trace.add_tool_call({
-                        "name": tool_call.function.name,
-                        "arguments": tool_call.function.arguments,
-                        "error": "tool not found",
-                    })
-                    continue
-                args = parse_arguments(tool_call.function.arguments)
-                tool_result = tool.execute(args)
-                trace.add_tool_call({
-                    "name": tool_call.function.name,
-                    "arguments": args,
-                    "result": tool_result,
-                })
-                prompts.append(build_tool_result_message(tool_call.id, tool_result))
+                execution = self.execute_tool(
+                    tool_call.function.name,
+                    tool_call.function.arguments,
+                )
+                trace_item = {
+                    "name": execution.name,
+                    "arguments": execution.arguments,
+                }
+                if execution.result.get("success") is False:
+                    trace_item["error"] = execution.result["error"]
+                else:
+                    trace_item["result"] = execution.result
+                trace.add_tool_call(trace_item)
+
+                prompts.append(self.context_builder.build_tool_result_message(
+                    tool_call.id,
+                    execution.result,
+                ))
 
         trace.add_final_ans(ans or "")
         return ans or ""
-
-
-def parse_arguments(arguments) -> dict:
-    if arguments is None:
-        return {}
-
-    if isinstance(arguments, str):
-        return json.loads(arguments)
-
-    if isinstance(arguments, dict):
-        return arguments
-
-    raise ValueError(
-        f"unsupported arguments type: {type(arguments)}"
-    )

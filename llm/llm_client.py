@@ -1,8 +1,8 @@
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
+from common.models import PromptMessage
 from config.config import LlmClientConfig
-from context.models import PromptMessage
 
 
 class LlmClient:

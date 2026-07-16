@@ -52,8 +52,16 @@ class SearchTool(BaseTool):
         }
 
     def execute(self, params: dict) -> dict:
-        knowledge = self.rag.find(params["query"])
+        results = self.rag.search(params["query"])
+        data = []
+        for result in results:
+            data.append({
+                "content": result.chunk.content,
+                "source": result.chunk.metadata.source,
+                "score": result.score,
+            })
+
         return {
-            "data": knowledge,
+            "data": data,
             "description": "当前命中的参考资料，可用于回答用户问题。"
         }

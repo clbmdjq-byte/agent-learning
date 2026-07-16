@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+import json
 import uuid
 
-from agent.models import Session
+from agent.models import Session, ToolExecution
 from common.time_utils import now_ms
 from llm.llm_client import LlmClient
 from memory.models import Message
@@ -64,6 +65,66 @@ class BaseAgent(ABC):
     def find_all_session_ids(self) -> list[str]:
         return self.session_repository.find_all_session_ids()
 
+    def execute_tool(self,
+                     name: str,
+                     raw_arguments: str | dict | None) -> ToolExecution:
+        tool = self.tool_registry.get_tool(name)
+        if tool is None:
+            return ToolExecution(
+                name=name,
+                arguments=raw_arguments,
+                result=build_tool_error(
+                    "tool_not_found",
+                    f"tool not found: {name}",
+                ),
+            )
+
+        try:
+            arguments = parse_tool_arguments(raw_arguments)
+        except (TypeError, ValueError) as error:
+            return ToolExecution(
+                name=name,
+                arguments=raw_arguments,
+                result=build_tool_error("invalid_arguments", str(error)),
+            )
+
+        try:
+            result = tool.execute(arguments)
+        except Exception as error:
+            return ToolExecution(
+                name=name,
+                arguments=arguments,
+                result=build_tool_error("tool_execution_failed", str(error)),
+            )
+
+        if not isinstance(result, dict):
+            return ToolExecution(
+                name=name,
+                arguments=arguments,
+                result=build_tool_error(
+                    "invalid_tool_result",
+                    f"tool must return dict, got {type(result).__name__}",
+                ),
+            )
+
+        try:
+            json.dumps(result, ensure_ascii=False)
+        except (TypeError, ValueError):
+            return ToolExecution(
+                name=name,
+                arguments=arguments,
+                result=build_tool_error(
+                    "invalid_tool_result",
+                    "tool result must be JSON serializable",
+                ),
+            )
+
+        return ToolExecution(
+            name=name,
+            arguments=arguments,
+            result=result,
+        )
+
     def after_success(self,
                       user_input: str,
                       llm_ans: str,
@@ -93,3 +154,26 @@ class BaseAgent(ABC):
         session.session_info.last_message_id = short_memory.last_message_id
         session.session_info.updated_at = now
         self.session_repository.store(session.session_info)
+
+
+def parse_tool_arguments(arguments: str | dict | None) -> dict:
+    if arguments is None:
+        return {}
+
+    if isinstance(arguments, str):
+        arguments = json.loads(arguments)
+
+    if not isinstance(arguments, dict):
+        raise ValueError("tool arguments must be a JSON object")
+
+    return arguments
+
+
+def build_tool_error(code: str, message: str) -> dict:
+    return {
+        "success": False,
+        "error": {
+            "code": code,
+            "message": message,
+        },
+    }
