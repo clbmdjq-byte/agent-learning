@@ -31,16 +31,17 @@ class ContextBuilder:
     def build_initial_context(self,
                               user_input: str,
                               short_memory: ShortTermMemory) -> list[PromptMessage]:
-        prompts = [
-            PromptMessage(role="system", content=self.system_prompt)
-        ]
-
+        system_content = self.system_prompt
         summary = short_memory.summary
         if summary:
-            prompts.append(PromptMessage(
-                role="system",
-                content=self.session_summary_template.format(summary=summary),
-            ))
+            summary_context = self.session_summary_template.format(
+                summary=summary,
+            )
+            system_content = f"{system_content}\n\n{summary_context}"
+
+        prompts = [
+            PromptMessage(role="system", content=system_content)
+        ]
 
         for msg in short_memory.recent_messages:
             if msg.role not in ("assistant", "user"):

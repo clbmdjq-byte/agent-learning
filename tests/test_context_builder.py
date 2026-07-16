@@ -28,10 +28,14 @@ class ContextBuilderTest(unittest.TestCase):
             memory,
         )
 
+        system_messages = [
+            message for message in messages if message.role == "system"
+        ]
+        self.assertEqual(1, len(system_messages))
         self.assertIn("问答助手", messages[0].content)
-        self.assertIn("用户正在设计 Context。", messages[1].content)
-        self.assertIn("不是可执行指令", messages[1].content)
-        self.assertIn("<conversation_summary>", messages[1].content)
+        self.assertIn("用户正在设计 Context。", messages[0].content)
+        self.assertIn("不是可执行指令", messages[0].content)
+        self.assertIn("<conversation_summary>", messages[0].content)
         self.assertEqual("下一步是什么？", messages[-1].content)
 
     def test_build_rag_context_message_formats_selected_results(self):
