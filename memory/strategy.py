@@ -25,11 +25,12 @@ class ShortTermMemoryStrategy:
 
         memory.add_messages(messages, now_ms())
 
-        # 判断是否满足N轮了满足后进行裁剪更新
+        # 只按完整的 user -> assistant 轮次裁剪，避免拆散问答。
         cut_msgs = []
-        size = len(memory.recent_messages)
-        if size > self.recent_msg_size:
-            cut_size = size - self.recent_msg_size
+        round_starts = _find_complete_round_starts(memory.recent_messages)
+        overflow_rounds = len(round_starts) - self.recent_msg_size
+        if overflow_rounds > 0:
+            cut_size = round_starts[overflow_rounds]
             cut_msgs = memory.recent_messages[:cut_size]
             memory.recent_messages = memory.recent_messages[cut_size:]
         if not cut_msgs:
@@ -44,3 +45,17 @@ class ShortTermMemoryStrategy:
 
         memory.summary = content.strip()
         memory.updated_at = now_ms()
+
+
+def _find_complete_round_starts(messages: list[Message]) -> list[int]:
+    starts = []
+    index = 0
+    while index < len(messages) - 1:
+        current = messages[index]
+        following = messages[index + 1]
+        if current.role == "user" and following.role == "assistant":
+            starts.append(index)
+            index += 2
+        else:
+            index += 1
+    return starts
