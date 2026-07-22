@@ -54,9 +54,15 @@ data/store/
 
 跨模块使用的 LLM 消息统一为 `common.models.PromptMessage`，由 `LlmClient` 在调用边界转换为模型接口需要的消息格式。
 
-`ContextBuilder` 当前负责将系统提示词、`ShortTermMemory`、当前用户输入、筛选后的 `SearchResult` 和 Tool 执行结果转换为 `PromptMessage`。Memory、RAG 和 Tool 在进入 Context 前保留各自的结构化输出，不提前拼接成最终对话字符串。
+`ContextDraft` 负责保存当前用户输入、`ShortTermMemory` 和本轮完整的 `ToolExchange`。`ContextEngine` 在每次调用 LLM 前先执行 `ContextSelector`，再调用 `ContextBuilder` 将选中材料渲染为 `PromptMessage`。当前默认使用 `NoOpContextSelector`，暂不删除任何材料。
 
-当前 Context 仍处于基础消息组装阶段，尚未实现跨来源选择、token 预算、原子消息组裁剪和 Context 构建报告。
+assistant tool call 与其全部 tool result 被建模为不可拆分的 `ToolExchange`，为后续原子裁剪建立了边界。ContextEngine 还会对实际渲染的消息和本轮实际 Tool Schema 进行启发式 token 估算，并通过 `ContextUsage` 返回分类统计。
+
+默认 `HeuristicTokenEstimator` 按 `ceil(UTF-8 字节数 / 3)` 估算文本，并计入每消息、每 Tool Schema 和整个请求的固定协议开销。这不是特定模型的精确 tokenizer，只用于观察 system 模板、会话、ToolExchange 和 Tool Schema 的相对开销及增长趋势。
+
+窗口统计使用 `MAX_CONTEXT_TOKENS`（默认 8192）、`MAX_TOKENS`（默认 1024，作为输出预留）和 `CONTEXT_SAFETY_TOKENS`（默认 128）。当前只统计 `estimated_remaining_tokens`，即使结果为负也不会裁剪或阻断请求。设置 `PRINT_TRACE=1` 可以查看每次 LLM 调用对应的 Context Usage。
+
+当前尚未实现主动 RAG、跨来源选择、实际 token 预算控制、裁剪策略和完整的 Context 选择报告。
 
 ### RAG
 
@@ -70,18 +76,19 @@ data/store/
 flowchart TD
     A[用户输入 + session_id] --> B[获取或恢复 Session]
     B --> C[读取 ShortTermMemory]
-    C --> D[ContextBuilder 构造初始 PromptMessage]
-    D --> E[LLM 调用]
-    E --> F{是否需要工具}
-    F -- 是 --> G[BaseAgent 解析并执行 Tool]
-    G --> H[Tool 返回结构化 dict]
-    H --> I[ContextBuilder 构造 Tool Message]
-    I --> E
-    F -- 否 --> J[得到最终答案]
-    J --> K[追加历史消息]
-    K --> L[更新短期记忆及摘要]
-    L --> M[持久化 Memory 与 Session]
-    M --> N[返回答案]
+    C --> D[Agent 收集 ContextDraft]
+    D --> E[ContextEngine 执行 Selector 与 Builder]
+    E --> F[LLM 调用]
+    F --> G{是否需要工具}
+    G -- 是 --> H[BaseAgent 解析并执行 Tool]
+    H --> I[Tool 返回结构化 dict]
+    I --> J[构造完整 ToolExchange 并更新 Draft]
+    J --> E
+    G -- 否 --> K[得到最终答案]
+    K --> L[追加历史消息]
+    L --> M[更新短期记忆及摘要]
+    M --> N[持久化 Memory 与 Session]
+    N --> O[返回答案]
 ```
 
 当前 RAG 通过 `SearchTool` 进入 Tool Loop，因此检索结果在主流程中表现为 Tool 的结构化输出。未来增加主动 RAG 后，`SearchResult` 将先进入 Context Selector，再由 Context Builder 渲染。
@@ -93,7 +100,7 @@ flowchart TD
 | `agent` | Agent 生命周期、Session 恢复、Tool 执行编排、LLM Loop | Context、Memory、Session、Tools、LLM、Trace |
 | `common` | 跨模块消息契约、角色类型、时间与本地存储基础能力 | Config |
 | `config` | LLM、存储目录和 RAG 路径配置 | 无业务包依赖 |
-| `context` | 将选定材料渲染为 Agent 使用的 `PromptMessage` | Common、Memory 输出模型、RAG 输出模型 |
+| `context` | 保存 ContextDraft、选择上下文材料、维护 ToolExchange 原子边界并渲染 `PromptMessage` | Common、Memory 输出模型、RAG 输出模型 |
 | `llm` | 模型客户端及模型接口转换 | Common、Config |
 | `memory` | 历史消息、短期记忆、摘要策略与内部摘要 Prompt | Common、LLM |
 | `rag` | 文档加载、切分、召回、合并与重排 | Config |
@@ -142,16 +149,21 @@ ContextBuilder 渲染 PromptMessage[]
 LLM
 ```
 
-计划按以下顺序继续：
+当前已完成基础生命周期：
 
-1. 定义 `ContextDraft`，集中保存当前用户输入、Memory、主动 RAG 结果和本轮 Tool Exchange。
-2. 定义不可拆分的 `ToolExchange` 或 `ContextSegment`，保证 assistant tool call 与 tool result 成组处理。
-3. 增加 `NoOpContextSelector`，先固定“每次调用 LLM 前执行 Selector”的生命周期，材料未超预算时原样返回。
-4. 增加 `ContextEngine`，统一编排 Selector 与 Builder，Agent 只负责收集和更新 Draft。
-5. 引入 token 估算与输入预算，始终保留系统指令和当前用户输入。
-6. 实现确定性选择策略：优先保留摘要和最近完整轮次，优先删除低分 RAG 和最旧对话。
-7. 增加 Context Trace，记录各来源 token、入选内容和裁剪原因。
-8. 补充完整轮次、Tool Exchange 配对、预算边界和多来源竞争测试。
+1. `ContextDraft` 集中保存当前用户输入、Memory 和本轮 Tool Exchange。
+2. `ToolExchange` 保证 assistant tool call 与全部 tool result 成组处理。
+3. `NoOpContextSelector` 固定每次 LLM 调用前执行 Selector 的生命周期。
+4. `ContextEngine` 统一编排 Selector 与 Builder。
+5. `TokenEstimator` 和 `ContextUsage` 统计实际渲染消息、Tool Schema 与固定协议开销。
+6. Agent Trace 按每次 LLM 调用展示 Context Usage。
+
+接下来按以下顺序演进：
+
+1. 先通过 Context Usage 观察不同来源和 Tool Loop 的上下文增长。
+2. 如后续需要控制预算，再实现确定性选择策略，始终保留系统指令和当前用户输入。
+3. 增加完整 Context Trace，记录材料入选和裁剪原因。
+4. 增加主动 RAG 后，再补充多来源竞争与裁剪测试。
 
 ## 设计原则
 
@@ -197,9 +209,9 @@ Multi-Agent
 
 ## 下一步计划
 
-* 继续实现 Context Engineering，优先完成 `ContextDraft`、`ContextSelector`、`ContextEngine` 和 token 预算闭环。
-* 修复短期记忆按消息数裁剪可能拆散完整对话轮次的问题。
-* 为 Agent Loop 增加最大循环次数耗尽后的明确失败状态，避免保存空回答。
+* 使用 Context Usage 观察固定模板、历史消息、Tool Schema 和 ToolExchange 的实际估算开销。
+* 继续按模块学习 Context、Tool、Memory 和 RAG 的职责边界。
+* 如 Demo 后续需要真实控制上下文，再为 ContextSelector 增加确定性裁剪策略和预算边界测试。
 * Context 基础流程稳定后，再继续验证 ReAct 和 Plan & Execute。
 * 后续再评估长期记忆提取与存储结构；当前 Memory Demo 先以短期记忆和历史消息持久化为主。
 

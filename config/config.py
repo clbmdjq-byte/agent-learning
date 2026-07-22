@@ -9,11 +9,19 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 class LlmClientConfig:
-    def __init__(self, base_url: str, model: str, api_key: str, max_tokens: int):
+    def __init__(self,
+                 base_url: str,
+                 model: str,
+                 api_key: str,
+                 max_tokens: int,
+                 max_context_tokens: int = 8192,
+                 context_safety_tokens: int = 128):
         self.base_url = base_url
         self.model = model
         self.api_key = api_key
         self.max_tokens = max_tokens
+        self.max_context_tokens = max_context_tokens
+        self.context_safety_tokens = context_safety_tokens
 
     @classmethod
     def from_env(cls) -> "LlmClientConfig":
@@ -22,6 +30,10 @@ class LlmClientConfig:
             model=os.getenv("MODEL", ""),
             api_key=os.getenv("API_KEY", ""),
             max_tokens=int(os.getenv("MAX_TOKENS", "1024")),
+            max_context_tokens=int(os.getenv("MAX_CONTEXT_TOKENS", "8192")),
+            context_safety_tokens=int(
+                os.getenv("CONTEXT_SAFETY_TOKENS", "128")
+            ),
         )
 
 

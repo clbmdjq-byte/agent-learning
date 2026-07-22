@@ -5,6 +5,7 @@ from typing import Any
 class AgentTrace:
     def __init__(self, user_input: str):
         self.user_input = user_input
+        self.context_usages = []
         self.tool_calls = []
         self.final_ans = ""
 
@@ -16,6 +17,9 @@ class AgentTrace:
             "========== Agent Trace ==========",
             "[User Input]",
             _format_text(self.user_input),
+            "",
+            "[Context Usage]",
+            self._format_context_usages(),
             "",
             "[Tool Calls]",
             self._format_tool_calls(),
@@ -35,6 +39,18 @@ class AgentTrace:
             lines.append(f"{index}. {_format_value(tool_call)}")
         return "\n".join(lines)
 
+    def _format_context_usages(self) -> str:
+        if not self.context_usages:
+            return "none"
+
+        lines = []
+        for index, usage in enumerate(self.context_usages, start=1):
+            lines.append(f"{index}. {_format_value(usage)}")
+        return "\n".join(lines)
+
+    def add_context_usage(self, usage: Any):
+        self.context_usages.append(usage)
+
     def add_tool_call(self, tool_call: Any):
         self.tool_calls.append(tool_call)
 
@@ -43,6 +59,9 @@ class AgentTrace:
 
 
 def _format_value(value: Any, max_length: int = 800) -> str:
+    if hasattr(value, "model_dump"):
+        value = value.model_dump()
+
     if isinstance(value, str):
         return _format_text(value, max_length)
 

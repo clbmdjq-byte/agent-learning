@@ -2,7 +2,8 @@ from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from agent.agent import BaseAgent
 from common.models import PromptMessage
-from context.builders.builder import ContextBuilder
+from context.engine import ContextEngine
+from context.models import ContextDraft, ToolExchange
 from llm.llm_client import LlmClient
 from tools.tool_registry import ToolRegistry
 from trace.trace import AgentTrace
@@ -14,9 +15,9 @@ class DemoAgent(BaseAgent):
                  name: str,
                  client: LlmClient,
                  registry: ToolRegistry,
-                 context_builder: ContextBuilder):
+                 context_engine: ContextEngine):
         super().__init__(name, 10, client, registry, 5)
-        self.context_builder = context_builder
+        self.context_engine = context_engine
 
     def run(self, user_input: str, session_id: str) -> str:
         if not user_input or not user_input.strip():
@@ -25,20 +26,22 @@ class DemoAgent(BaseAgent):
         trace = AgentTrace(user_input)
         self.last_trace = trace
         session = self.get_session(session_id)
-        prompts = self.context_builder.build_initial_context(
-            user_input,
-            session.short_memory,
+        draft = ContextDraft(
+            user_input=user_input,
+            short_memory=session.short_memory,
         )
-        ans = self.loop(prompts, trace)
+        ans = self.loop(draft, trace)
         # 构造历史消息，当前先不加入tool_call
         self.after_success(user_input, ans, session_id)
         return ans or ""
 
-    def loop(self, prompts: list[PromptMessage], trace: AgentTrace) -> str:
+    def loop(self, draft: ContextDraft, trace: AgentTrace) -> str:
         ans = ""
         for _ in range(self.max_loop):
-            res = self.client.chat(prompts,
-                                   self.tool_registry.tool_schemas())
+            tool_schemas = self.tool_registry.tool_schemas()
+            context_result = self.context_engine.build(draft, tool_schemas)
+            trace.add_context_usage(context_result.usage)
+            res = self.client.chat(context_result.messages, tool_schemas)
             if res is None or not res.choices:
                 raise Exception("llm not responding")
 
@@ -48,7 +51,10 @@ class DemoAgent(BaseAgent):
 
                 ans = message.content
                 break
-            prompts.append(PromptMessage.model_validate(message.model_dump(exclude_none=True)))
+            assistant_message = PromptMessage.model_validate(
+                message.model_dump(exclude_none=True)
+            )
+            tool_messages = []
 
             for tool_call in tool_calls:
                 if not isinstance(tool_call, ChatCompletionMessageFunctionToolCall):
@@ -67,10 +73,20 @@ class DemoAgent(BaseAgent):
                     trace_item["result"] = execution.result
                 trace.add_tool_call(trace_item)
 
-                prompts.append(self.context_builder.build_tool_result_message(
-                    tool_call.id,
-                    execution.result,
-                ))
+                tool_messages.append(
+                    self.context_engine.build_tool_result_message(
+                        tool_call.id,
+                        execution.result,
+                    )
+                )
+            draft.tool_exchanges.append(ToolExchange(
+                assistant_message=assistant_message,
+                tool_messages=tool_messages,
+            ))
+        else:
+            raise RuntimeError(
+                f"agent loop exhausted after {self.max_loop} iterations"
+            )
 
         trace.add_final_ans(ans or "")
         return ans or ""
